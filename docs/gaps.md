@@ -1,6 +1,6 @@
 # Where WordCraft falls short of Word
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-18 · **Change:** trivial (Spanish dictionary integration on PR #1522; real RLA-ES loading remains blocked by the parser issue addressed in #2164; earlier changes in Revision history) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-18 · **Change:** trivial (RLA-ES Spanish loading fixed locally with #2164; real-dictionary CLI smoke test; earlier changes in Revision history) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
 
 > **Printing update:** 2026-10-12 · direct desktop printing through craft-print; details below.
 
@@ -24,8 +24,10 @@ Document renaming: desktop renaming requires a filesystem that supports hard lin
 
 Spanish proofing (gap #8, PR #1522): dictionary-folder changes now reload Spanish, Options lists
 the selected dictionary and the status bar reports an unavailable one. Synthetic lifecycle tests
-cover this integration; real RLA-ES `es_MX` still fails to load because of a Unicode flag (the
-separate fix is #2164). No dictionary files are bundled and readiness estimates are unchanged.
+cover this integration. The Unicode-flag fix from #2164 is included locally; real RLA-ES `es_MX`
+now loads, and a CLI smoke test flags `cancion`/`prueva` and suggests `canción`/`prueba`. Whole-dictionary
+coverage, regional accuracy and other Spanish proofing depth remain unmeasured. No dictionary
+files are bundled and readiness estimates are unchanged.
 
 | # | Gap | B | Evidence | Impact | Hours | Doc |
 |---|---|---|---|---|---|---|
@@ -94,6 +96,7 @@ The Language dialog reads effective character formatting, including document def
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-18 | trivial | Gap #8: RLA-ES parser prerequisite #2164 included locally and real es_MX loading/CLI correction smoke-tested; no dictionary bundled and no readiness estimate change |
 | 2026-10-18 | trivial | Gap #8: Spanish dictionary reload, source reporting and unavailable hint covered on PR #1522; real-dictionary parser prerequisite #2164 remains; estimates unchanged |
 | 2026-10-17 | trivial | Language dialog keeps inherited proofing language and no-proof choices (#2717); readiness estimates unchanged |
 | 2026-10-14 | trivial | Row table border exceptions fixed; other row table exceptions remain unsupported |

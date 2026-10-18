@@ -2,7 +2,7 @@
 
 **Stage: alpha** · next: beta, ~15 points (60% → 75% ready for real work) and ~150–230 h away
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-18 · **Change:** trivial (Spanish dictionary-folder lifecycle on PR #1522; real RLA-ES parser prerequisite #2164 remains; earlier changes in Revision history) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-18 · **Change:** trivial (RLA-ES Spanish dictionary loading fixed locally using #2164 and smoke-tested through the CLI; earlier changes in Revision history) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
 > **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-14 · **Change:** trivial (progress log: print-area strings translated in every catalog; previously trivial: progress log: ODT sections, #1379; previously trivial: progress log: table deletes, Change Case and Unlink Fields respect Track Changes and locked content controls, #1329; previously trivial: progress log: rounded rectangle corners, #1476; previously trivial: progress log: Save As type list, #1399; previously trivial: progress log: privacy options on save, #1062; previously trivial: progress log: equation pictures in theme colours on Windows, #1002; previously trivial: symbol fonts, #776; previously trivial: the save prompt answers from the keyboard, #861; previously trivial: table column and row markers on the rulers, #700; previously trivial: table borders and the resize handle drag on the page, #217; previously trivial: formatting revisions landed, #41; previously trivial: Draw tab ink, #307, and Draw Table and Eraser, #303, landed: catalog 402/434; previously minor: readiness table with hours per audience; full number back to the additive weighted sum, 60%; mainstream and essentials numbers added; alpha gate checked; previously major: full re-measure against Word for Mac 16.113.4; restructured to the craftrules progress-docs standard) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
 > **Printing update:** 2026-10-12 · direct desktop printing through craft-print; details below.
 
@@ -135,6 +135,7 @@ Ranked, to beta (detail and remaining milestones in [docs/roadmap.md](docs/roadm
 ## Progress log
 
 | Date | What landed |
+| 2026-10-18 | Included the RLA-ES Unicode-flag fix from #2164 locally, on the Spanish #1522 branch. The real es_MX dictionary loads 56,640 stems and 6,289 rules; the CLI flags cancion and prueva and suggests canción and prueba. Original synthetic regression retained; no external dictionary data committed and no readiness estimate changed. |
 | 2026-10-18 | Spanish dictionary integration on PR #1522: changing the dictionaries folder clears the Spanish cache, Proofing options reports its file and the status bar hints when no usable dictionary loads. Synthetic lifecycle regression covers accents, ñ suggestions and folder changes; real RLA-ES es_MX loading still needs the Unicode-flag fix in #2164. No readiness estimate changes. |
 | 2026-10-14 | DOCX row table border exceptions render and survive saving. Explicit cell borders win; a row exception does not change other rows. |
 | 2026-10-14 | Tab stops edited on the ruler: the corner selector picks Left/Center/Right/Decimal/Bar, a click sets a stop (Alt skips the snap), dragging moves it with a guide line and position tooltip, dragging off the ruler clears it; markers draw per kind and mirror for RTL; one `para.tabs` call and one undo step per gesture |
@@ -405,6 +406,7 @@ Ranked, to beta (detail and remaining milestones in [docs/roadmap.md](docs/roadm
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-18 | trivial | Progress log: RLA-ES Spanish loading fix #2164 included locally and verified with real es_MX files through the CLI |
 | 2026-10-18 | trivial | Progress log: Spanish dictionary reload, source reporting and unavailable hint on PR #1522, with real RLA-ES parser limitation recorded |
 | 2026-10-17 | trivial | Language dialog keeps inherited proofing language and no-proof choices (#2717); readiness estimates unchanged |
 | 2026-10-14 | trivial | Progress log: row table border exceptions |
