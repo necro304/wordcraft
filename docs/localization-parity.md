@@ -1,6 +1,6 @@
 # Localization parity with Microsoft Word
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-18 · **Change:** trivial (RLA-ES Spanish dictionary loading fixed using #2164 and verified with real es_MX files; earlier changes in Revision history) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-18 · **Change:** minor (independent Spanish dictionary validation exposes affix, options and Unicode-input gaps; earlier changes in Revision history) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
 
 Interface languages, script support and proofing per language. How translation works (catalog
 format, adding a language, clean-room rule): `crates/ui-egui/src/i18n/mod.rs`.
@@ -121,6 +121,14 @@ Spanish diagnostics. Those files are not bundled or committed. This is a smoke t
 measurement of the whole dictionary's coverage or regional accuracy; readiness estimates stay
 unchanged. Each user still needs to install a Spanish Hunspell pair or select its folder.
 
+**Wider validation (2026-10-18):** [Spanish proofing validation](spanish-proofing-validation.md)
+compares the same files with Hunspell 1.7.5. A 130,938-input Mexico batch finds two erroneous
+acceptances from merged homonym flags. Of 557,222 independently expanded, reference-accepted
+forms, 3,552 are rejected here. The report separates wrapper policies and regional data from
+engine faults, and records options, decomposed-Unicode and abbreviation problems. Suggestion
+targets appear first in 37/48 Mexico probes and in the first six in 44/48. These findings remain
+unfixed in this validation arc; the initial smoke test is not full dictionary parity.
+
 | Language | Spelling | Suggestions | Grammar | Hyphenation |
 |---|---|---|---|---|
 | Spanish (`es`, any region; `spa`) | An installed Hunspell Spanish pair, never bundled; real RLA-ES es_MX loading smoke-tested; folder changes reload it, Options reports its file, and no usable dictionary means no spelling marks | accent/`ñ` MAP entries, REP confusions, missing spaces and edit-distance candidates | Spanish messages for repeated words, spacing, sentence capitals (including `¿`/`¡`) and doubled punctuation | existing English fallback; no Spanish patterns added |
@@ -213,6 +221,7 @@ WordCraft keeps 2,54 cm).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-18 | minor | Independent Spanish/Hunspell comparison and native expansion reveal unresolved affix, suggestion, review-option, Unicode and abbreviation gaps; linked detailed evidence, estimates unchanged |
 | 2026-10-18 | trivial | Included the RLA-ES Unicode-flag fix from #2164 locally; real es_MX loads (56,640 stems, 6,289 rules), CLI flags cancion/prueva and suggests canción/prueba; dictionary data stays external; estimates unchanged |
 | 2026-10-18 | trivial | Spanish dictionary-folder changes invalidate its cache; Options reports its source and the status bar hints when unavailable; synthetic lifecycle regression passes; real RLA-ES es_MX loading remains blocked by the Unicode flag issue addressed in #2164; estimates unchanged |
 | 2026-10-12 | minor | Czech proofing review: short-word splits rank after deletion, NOSUGGEST excludes suggestions while accepting typed forms, affix comments apply only to headers, ratios keep spaces and repeated-word messages use Czech quotes; synthetic engine end-to-end and latency checks |

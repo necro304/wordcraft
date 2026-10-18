@@ -1,6 +1,6 @@
 # Where WordCraft falls short of Word
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-18 · **Change:** trivial (RLA-ES Spanish loading fixed locally with #2164; real-dictionary CLI smoke test; earlier changes in Revision history) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-18 · **Change:** minor (independent Spanish validation identifies remaining proofing gaps; earlier changes in Revision history) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
 
 > **Printing update:** 2026-10-12 · direct desktop printing through craft-print; details below.
 
@@ -26,8 +26,11 @@ Spanish proofing (gap #8, PR #1522): dictionary-folder changes now reload Spanis
 the selected dictionary and the status bar reports an unavailable one. Synthetic lifecycle tests
 cover this integration. The Unicode-flag fix from #2164 is included locally; real RLA-ES `es_MX`
 now loads, and a CLI smoke test flags `cancion`/`prueva` and suggests `canción`/`prueba`. Whole-dictionary
-coverage, regional accuracy and other Spanish proofing depth remain unmeasured. No dictionary
-files are bundled and readiness estimates are unchanged.
+parity is not established: [independent validation](spanish-proofing-validation.md) finds two
+false acceptances from merged homonym flags, 3,552 rejected forms out of 557,222 accepted by the
+reference in an expansion batch, missing suggestion targets, ignored explicit proofing options,
+decomposed-Unicode tokenization problems and an abbreviation false alarm. Regional accuracy
+remains partial. No dictionary files are bundled and readiness estimates are unchanged.
 
 | # | Gap | B | Evidence | Impact | Hours | Doc |
 |---|---|---|---|---|---|---|
@@ -96,6 +99,7 @@ The Language dialog reads effective character formatting, including document def
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-18 | minor | Gap #8: independent Spanish validation records unresolved affix, suggestion, options, Unicode and grammar issues, rather than treating dictionary loading as parity; estimates unchanged |
 | 2026-10-18 | trivial | Gap #8: RLA-ES parser prerequisite #2164 included locally and real es_MX loading/CLI correction smoke-tested; no dictionary bundled and no readiness estimate change |
 | 2026-10-18 | trivial | Gap #8: Spanish dictionary reload, source reporting and unavailable hint covered on PR #1522; real-dictionary parser prerequisite #2164 remains; estimates unchanged |
 | 2026-10-17 | trivial | Language dialog keeps inherited proofing language and no-proof choices (#2717); readiness estimates unchanged |
