@@ -1,8 +1,8 @@
 //! Spanish proofing.
 //!
 //! - **Spelling** against the Hunspell `es_419` dictionary installed on the system
-//!   ([`dictionary`], found by [`crate::hunspell`]: `es_419.aff`/`es_419.dic` — VERO and its
-//!   derivatives — from the OS, a package manager or LibreOffice; it isn't bundled). Without it
+//!   ([`dictionary`], found by [`crate::hunspell`]: `es_419.aff`/`es_419.dic` or a supported
+//!   regional pair such as `es_MX` — from the OS, a package manager or LibreOffice; it isn't bundled). Without it
 //!   Spanish text gets no spelling marks. Capitalized stems are names (`México`); a sentence
 //!   may start with any word and headings may be in capitals. Hyphenated compounds are checked
 //!   part by part (`guarda-ropa`, `ex-marido`), and the user dictionary applies as in English.
@@ -64,6 +64,12 @@ pub fn install_dictionary(aff: &str, dic: &str) -> Result<(), String> {
 /// [`crate::hunspell::set_dictionary_dir`] or a dictionary was installed).
 pub fn reload_dictionary() {
     *DICT.write().unwrap_or_else(|e| e.into_inner()) = None;
+}
+
+/// The `.dic` file found in the dictionaries folder or system locations, for File › Options ›
+/// Proofing. A dictionary given with [`install_dictionary`] has no file and isn't reported.
+pub fn installed_path() -> Option<std::path::PathBuf> {
+    crate::hunspell::find(NAMES).map(|(_, dic)| dic)
 }
 
 /// Is a Spanish dictionary available (spelling is checked)?

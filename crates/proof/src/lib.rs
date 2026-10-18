@@ -144,6 +144,7 @@ pub fn set_dictionaries_folder(dir: Option<std::path::PathBuf>) {
     hunspell::set_dictionary_dir(dir);
     pl::reload_dictionary();
     pt::reload_dictionary();
+    es::reload_dictionary();
     it::reload_dictionary();
     hr::reload_dictionary();
     tr::reload_dictionary();
@@ -156,6 +157,7 @@ pub fn installed_dictionaries() -> Vec<(ProofLang, Option<std::path::PathBuf>)> 
     vec![
         (ProofLang::Pl, pl::installed_path()),
         (ProofLang::Pt, pt::installed_path()),
+        (ProofLang::Es, es::installed_path()),
         (ProofLang::It, it::installed_path()),
         (ProofLang::Hr, hr::installed_path()),
         (ProofLang::Tr, tr::installed_path()),
@@ -373,16 +375,18 @@ pub fn missing_dictionary(lang: Option<&str>) -> Option<&'static str> {
     match ProofLang::from_tag(lang) {
         ProofLang::Pl => dictionary_needed(ProofLang::Pl, pl::has_dictionary()),
         ProofLang::Pt => dictionary_needed(ProofLang::Pt, pt::has_dictionary()),
+        ProofLang::Es => dictionary_needed(ProofLang::Es, es::has_dictionary()),
         _ => None,
     }
 }
 
-/// The Hunspell name `lang` needs when `installed` is false; only Polish and Portuguese use one.
+/// The Hunspell name `lang` needs when `installed` is false, for languages with a status-bar hint.
 fn dictionary_needed(lang: ProofLang, installed: bool) -> Option<&'static str> {
     match lang {
         _ if installed => None,
         ProofLang::Pl => Some("pl_PL"),
         ProofLang::Pt => Some("pt_BR"),
+        ProofLang::Es => Some("es_419"),
         _ => None,
     }
 }
@@ -833,15 +837,18 @@ mod tests {
     fn missing_dictionary_is_named_only_for_hunspell_languages_without_one() {
         assert_eq!(dictionary_needed(ProofLang::Pl, false), Some("pl_PL"));
         assert_eq!(dictionary_needed(ProofLang::Pt, false), Some("pt_BR"));
+        assert_eq!(dictionary_needed(ProofLang::Es, false), Some("es_419"));
         assert_eq!(dictionary_needed(ProofLang::Pl, true), None);
         assert_eq!(dictionary_needed(ProofLang::Pt, true), None);
+        assert_eq!(dictionary_needed(ProofLang::Es, true), None);
         for l in [ProofLang::En, ProofLang::Bg, ProofLang::Other] {
             assert_eq!(dictionary_needed(l, false), None);
         }
         // Installed dictionaries and the built-in English list: no hint.
         pl::test_dict::install();
         pt::test_dict::install();
-        for tag in [Some("pl-PL"), Some("pt-BR"), Some("en-US"), Some("fr-FR"), None] {
+        es::test_dict::install();
+        for tag in [Some("pl-PL"), Some("pt-BR"), Some("es-419"), Some("es-MX"), Some("en-US"), Some("fr-FR"), None] {
             assert_eq!(missing_dictionary(tag), None, "{tag:?}");
         }
     }
@@ -859,6 +866,7 @@ mod tests {
         for (name, aff, dic) in [
             ("pl_PL", pl::test_dict::AFF, pl::test_dict::DIC),
             ("pt_BR", pt::test_dict::AFF, pt::test_dict::DIC),
+            ("es_419", es::test_dict::AFF, es::test_dict::DIC),
             ("it_IT", it::test_dict::AFF, it::test_dict::DIC),
             ("hr_HR", hr::test_dict::AFF, hr::test_dict::DIC),
         ] {
@@ -872,10 +880,11 @@ mod tests {
         let found = installed_dictionaries();
         assert_eq!(found.last().map(|(lang, _)| *lang), Some(ProofLang::Tr));
         assert_eq!(
-            found[..4],
+            found[..5],
             [
                 (ProofLang::Pl, Some(dir.join("pl_PL.dic"))),
                 (ProofLang::Pt, Some(dir.join("pt_BR.dic"))),
+                (ProofLang::Es, Some(dir.join("es_419.dic"))),
                 (ProofLang::It, Some(dir.join("it_IT.dic"))),
                 (ProofLang::Hr, Some(dir.join("hr_HR.dic"))),
             ]

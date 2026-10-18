@@ -1,6 +1,6 @@
 # Where WordCraft falls short of Word
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-17 · **Change:** trivial (Language dialog keeps inherited proofing language and no-proof choices (#2717)); previously trivial (VML freeforms read and kept on save; previously trivial: consistent preferred cell widths; previously trivial: multi-paragraph field instructions no longer add blank lines; previously trivial: page-break-only list paragraphs hide their labels; previously trivial: floating-table overlap ignores empty line-break lines; previously trivial: copies keep their formatting on the clipboard as HTML, #1523; previously trivial: sample-text formulas on Enter, #1067; previously trivial: #29: copied equations as MathML, OMML open as #1297, #816; previously trivial: the Font list no longer keeps every previewed font in memory, #848; previously trivial: table column and row markers on the rulers, #700; previously trivial: table borders and the resize handle drag on the page, #217; previously trivial: formatting revisions landed, #41; previously trivial: Draw Table and Eraser landed, #303; previously minor: beta distance restated: ~15 points, ~150–230 h; previously: first version; every known shortfall from the 2026-10-10 re-measure, ranked) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-18 · **Change:** trivial (Spanish dictionary integration on PR #1522; real RLA-ES loading remains blocked by the parser issue addressed in #2164; earlier changes in Revision history) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
 
 > **Printing update:** 2026-10-12 · direct desktop printing through craft-print; details below.
 
@@ -21,6 +21,11 @@ establish cross-platform reliability.
 Document renaming: desktop renaming requires a filesystem that supports hard links (exFAT/FAT drives and some network shares refuse it). Behaviour: [UI parity](ui-parity.md).
 
 ## Ranked
+
+Spanish proofing (gap #8, PR #1522): dictionary-folder changes now reload Spanish, Options lists
+the selected dictionary and the status bar reports an unavailable one. Synthetic lifecycle tests
+cover this integration; real RLA-ES `es_MX` still fails to load because of a Unicode flag (the
+separate fix is #2164). No dictionary files are bundled and readiness estimates are unchanged.
 
 | # | Gap | B | Evidence | Impact | Hours | Doc |
 |---|---|---|---|---|---|---|
@@ -89,6 +94,7 @@ The Language dialog reads effective character formatting, including document def
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-18 | trivial | Gap #8: Spanish dictionary reload, source reporting and unavailable hint covered on PR #1522; real-dictionary parser prerequisite #2164 remains; estimates unchanged |
 | 2026-10-17 | trivial | Language dialog keeps inherited proofing language and no-proof choices (#2717); readiness estimates unchanged |
 | 2026-10-14 | trivial | Row table border exceptions fixed; other row table exceptions remain unsupported |
 | 2026-10-12 | minor | Czech proofing review: short-word splits rank after deletion, NOSUGGEST excludes suggestions while accepting typed forms, affix comments apply only to headers, ratios keep spaces and repeated-word messages use Czech quotes; synthetic engine end-to-end and latency checks |
