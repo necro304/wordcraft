@@ -1,13 +1,14 @@
 # Spanish proofing: external dictionary validation
 
-> **Last reviewed:** 2026-10-18 · **Last updated:** 2026-10-18 · **Change:** minor (first independent Hunspell comparison) · **Target:** RLA-ES Spanish dictionaries and Hunspell 1.7.5
+> **Last reviewed:** 2026-10-18 · **Last updated:** 2026-10-18 · **Change:** minor (homonym cross products and explicit Spanish review options fixed; original corpus retested) · **Target:** RLA-ES Spanish dictionaries and Hunspell 1.7.5
 
 ## Result and scope
 
 The real Spanish dictionaries load, but the checker is **not fully equivalent to Hunspell**.
-The wider checks below found affix and review-option problems and gaps in suggestion ranking.
+The baseline checks below found affix and review-option problems and gaps in suggestion ranking.
 This is validation evidence, not a claim of Spanish linguistic accuracy or completed Word parity.
-No production behaviour or dictionary contents were changed during this validation.
+The follow-up fixes two of those problems; see [Repairs and repeat validation](#repairs-and-repeat-validation).
+The original external dictionary contents remain unchanged.
 
 Tested WordCraft revision: `4fcba41b2c9857aebe1a3c2dc9a7d552980e74a3`, including the Spanish
 dictionary integration and the Unicode-flag fix from #2164. Rust: 1.99.1, macOS arm64.
@@ -33,7 +34,7 @@ dictionary integration and the Unicode-flag fix from #2164. Rust: 1.99.1, macOS 
   a manually certified list of universally correct Spanish words. Hunspell agreement measures
   compatibility with these files, not correctness according to the RAE or context.
 
-## Dictionary comparisons
+## Baseline dictionary comparisons
 
 | Dictionary | Listed stems | Distinct inputs | Raw dictionary disagreements | Spanish-wrapper disagreements |
 |---|---:|---:|---:|---:|
@@ -62,9 +63,9 @@ are not evidence of common writing failures. Nevertheless, the batch exposes a c
 gap that a test using only WordCraft's own expansion would miss. This is not an exhaustive
 expansion of all Hunspell constructions, nor a negative-word accuracy benchmark.
 
-## Confirmed findings
+## Baseline findings
 
-### Homonymous entries merge otherwise separate affix permissions
+### Homonymous entries merge otherwise separate affix permissions (fixed in follow-up)
 
 `AffixDict::build` merges flags from entries with the same spelling. The real dictionary has
 separate entries for `todo`; the merged permissions admit the two forms above.
@@ -90,7 +91,7 @@ Both engines accept `canto`, `canta` and `supercanto`. Only WordCraft accepts `s
 the two separate entries must not license that cross product. This is an engine issue, not a
 reason to edit or redistribute the real dictionary.
 
-### Explicit review options do not fully control input skipping
+### Explicit review options do not fully control input skipping (fixed in follow-up)
 
 Through `wordcraft-cli`, set `file.options` to
 `{"ignoreUppercase":false,"ignoreNumbers":false}` and check:
@@ -116,7 +117,7 @@ words with Hunspell does not validate this document-input behaviour.
 `Vive en EE. UU. desde hace un año.` marks `desde` and proposes `Desde`. The abbreviation's
 period is being interpreted as a sentence boundary. This is a grammar-rule issue, not spelling.
 
-## Suggestions
+## Baseline suggestions
 
 On **48 original misspelling/target pairs**, the reference rejected every input and accepted
 every target. For `es_MX`, WordCraft offered the target first in **37/48** and within six results
@@ -147,12 +148,58 @@ budgets or guarantees for other dictionaries or platforms.
 - `Si él quiere, sí. El té es para tu taza y tú decides.` remained clean. Lowercase sentence
   starts following `¿` and `¡` were still identified, with Spanish diagnostics.
 
+## Repairs and repeat validation
+
+The follow-up changes production behaviour in two bounded areas:
+
+- **Homonym affix permissions:** a sparse table retains the different masks for repeated stems.
+  A prefix/suffix cross product must have both permissions in the same entry. Single-entry
+  lookups keep their existing fast path, and the existing exclusion policy is unchanged.
+  Form generation checks the same entry-level permissions before emitting cross products, so
+  the suggestion scanner cannot generate an unlicensed combination. Generation stays shared
+  rather than multiplying its allocations by the number of homonymous entries.
+- **Compact dictionaries:** homonyms are stored as separate front-coded lines in the existing
+  `WCAFF1` format. The new regression checks the same permissions before and after serialization;
+  ordinary dictionaries retain their existing format. Information already lost in an older
+  merged cache cannot be recovered without reimporting the source dictionary.
+- **Spanish review options:** `is_correct_in_with` forwards the explicit options to the Spanish
+  checker. Capital and digit skips are now conditional on those choices. Defaults are unchanged;
+  pure numbers and single letters are still intentionally skipped. Other proofing languages'
+  option handling is not changed by this repair.
+
+Both new regressions failed before the repair and pass afterwards:
+`affix::tests::homonym_entries_do_not_combine_affix_permissions` and
+`es::tests::explicit_spanish_ignore_options_are_respected`. The proof suite passes **223 unit
+tests plus one integration test**. The synthetic homonym regression also proves that a single
+entry carrying both flags still licenses its cross product; the feature was not simply disabled.
+It also preserves prefixes explicitly granted by suffix continuation classes, including after
+a compact round trip; that control was independently checked with native Hunspell.
+
+Repeat checks use the **frozen original 130,938-input Mexico corpus**, not a smaller newly
+generated sample. Raw false acceptances fall from **2 to 0**. The six remaining raw differences
+are the same number/hyphen tokens handled by the Spanish wrapper. Its 17 remaining default-mode
+differences are the documented input-skipping policies, not the two former affix errors.
+
+Through the real-dictionary CLI, `No aceptes sobretoda ni sobretodas.` now flags both words.
+With `ignoreUppercase` and `ignoreNumbers` false, the original options probe now flags `ARBOL`,
+`MEXICO`, `CANCION`, `español2` and `ZZQQ`, while accepting the correctly accented forms.
+The mixed-language DOCX round trip still preserves its Spanish and English issues.
+
+The independently expanded batch remains at **3,552 rejections out of 557,222 reference-accepted
+forms**. The 48-case suggestion results are unchanged (37 targets first, 44 within six; no
+reference-invalid candidates). Decomposed-Unicode tokenization, the `EE. UU.` grammar false
+alarm, regional selection and the missing suggestion targets remain open. These repairs do not
+establish full Hunspell or Spanish proofing parity.
+
 ## Reproducibility and retained evidence
 
 All raw outputs, original probe scripts, synthetic reproducer and the generated DOCX are retained
 locally under the validation folder recorded in `plan/spanish-review.md` (gitignored). No word
 lists expanded from external dictionaries are committed. Key outputs are `summary.json`,
 `expanded-summary.json`, `es_MX-mismatches.json` and `runtime-results.json`.
+The original corpus and summaries were preserved in `before-fixes/`; repeat results are in
+`after-fixes-fixed-summary.json` and `after-fixes-suggestions.json`. The regression red/green
+runs are retained as `regressions-before.log` and `regressions-after.log`.
 
 Hunspell bottle SHA-256: `a3d2964292b7f77eb11ed6e67a1c2ac092a1268454da7befbc592793fc52f46e`.
 
@@ -171,4 +218,5 @@ Hunspell bottle SHA-256: `a3d2964292b7f77eb11ed6e67a1c2ac092a1268454da7befbc5927
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-18 | minor | Fixed homonym cross products/form generation/compact round trips and explicit Spanish skip options; original corpus false acceptances 2 → 0; independent expanded and suggestion gaps unchanged |
 | 2026-10-18 | minor | First independent comparison, native expansion, public-command checks and unfixed findings; no production change or readiness estimate increase |

@@ -170,6 +170,10 @@ pub struct AffixDict {
     flags: Vec<u16>,
     /// Distinct flag masks.
     sets: Vec<u128>,
+    /// Separate permissions for homonymous entries. The mask above is their union for fast
+    /// single-flag lookups, but a cross product must be licensed by one entry, not that union.
+    /// Only stems with more than one distinct mask need this sparse table.
+    homonyms: HashMap<Box<str>, Box<[u128]>>,
     /// The `FORBIDDENWORD` flag's bit; stems carrying it are not words (0: none declared).
     forbidden: u128,
     /// Stems with NOSUGGEST are correct, but none of their forms are suggested.
@@ -413,7 +417,7 @@ impl AffixDict {
         }
         let bit_of = |c: char| flag_chars.iter().position(|&x| x == c).map_or(0, |i| 1u128 << i);
         let forbidden = rules.forbidden.map_or(0, bit_of);
-        // Stems sorted by bytes; homonyms (the same word twice) are merged.
+        // Stems sorted by bytes; homonyms share a lookup, but keep their separate permissions.
         stems.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
         let mut d = AffixDict {
             words: String::with_capacity(stems.iter().map(|s| s.0.len()).sum()),
@@ -440,6 +444,15 @@ impl AffixDict {
             {
                 mask |= f.chars().map(bit_of).fold(0, |a, b| a | b);
                 j += 1;
+            }
+            if j.saturating_sub(i) > 1 {
+                let mut alternatives: Vec<u128> =
+                    stems.get(i..j).unwrap_or_default().iter().map(|(_, flags)| flags.chars().map(bit_of).fold(0, |a, b| a | b)).collect();
+                alternatives.sort_unstable();
+                alternatives.dedup();
+                if alternatives.len() > 1 {
+                    d.homonyms.insert(word.as_str().into(), alternatives.into_boxed_slice());
+                }
             }
             let next_id = u16::try_from(d.sets.len()).map_err(|_| "too many distinct flag sets".to_string())?;
             let id = *set_ids.entry(mask).or_insert(next_id);
@@ -576,6 +589,12 @@ impl AffixDict {
         None
     }
 
+    /// The caller has checked the union mask already; joint permissions must also belong
+    /// to one entry. Keeping generation shared avoids multiplying allocations by homonym count.
+    fn homonym_permits(&self, stem: &str, required: u128) -> bool {
+        self.homonyms.get(stem).is_none_or(|masks| masks.iter().any(|mask| mask & required == required))
+    }
+
     /// Does `w` carry flag `bit` — as a stem, or as the form of a suffix rule whose
     /// continuation classes include `bit` (chained suffixation, depth-bounded)?
     fn form_has_flag(&self, w: &str, bit: u128, depth: u8, excluded: u128) -> bool {
@@ -665,7 +684,13 @@ impl AffixDict {
                 // when a cross product is being checked).
                 if let Some(f) = self.stem_flags_excluding(&root, excluded)
                     && f & need == need
-                    && rules().any(|r| f & r.bit != 0 && (need == 0 || r.cross) && r.cond_matches(&root, true))
+                    && rules().any(|r| {
+                        let required = need | r.bit;
+                        f & r.bit != 0
+                            && (need == 0 || r.cross)
+                            && r.cond_matches(&root, true)
+                            && (need == 0 || self.homonym_permits(&root, required))
+                    })
                 {
                     return true;
                 }
@@ -719,7 +744,7 @@ impl AffixDict {
             let Some(base) = stem.strip_suffix(&*r.strip) else { continue };
             let form = format!("{base}{}", r.add);
             if r.cross {
-                cross_sfx.push(form.clone());
+                cross_sfx.push((form.clone(), r.bit, r.cont));
             }
             if r.cont != 0 {
                 chain.push((form.clone(), r.cont));
@@ -754,7 +779,10 @@ impl AffixDict {
             let Some(rest) = stem.strip_prefix(&*r.strip) else { continue };
             out.push(format!("{}{rest}", r.add));
             if r.cross {
-                for s in &cross_sfx {
+                for (s, suffix_bit, continuation) in &cross_sfx {
+                    if continuation & r.bit == 0 && !self.homonym_permits(stem, r.bit | suffix_bit) {
+                        continue;
+                    }
                     if let Some(rest) = s.strip_prefix(&*r.strip) {
                         out.push(format!("{}{rest}", r.add));
                     }
@@ -792,7 +820,8 @@ impl AffixDict {
     /// Serialize to WordCraft's compact format: raw-deflate of `WCAFF1`, the comments, the
     /// tables and rules as text lines, a `WORDS` line, then one line per stem, front-coded
     /// against the previous one (a byte with the shared prefix length in bytes, the rest of the
-    /// word, `/` and its flags if any).
+    /// word, `/` and its flags if any). Homonyms repeat the stem with each separate flag mask;
+    /// this uses the same line format, so old single-entry dictionaries still read unchanged.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut out = String::new();
         out.push_str(MAGIC);
@@ -841,16 +870,19 @@ impl AffixDict {
         for i in 0..self.len() {
             let Some(w) = self.word(i) else { continue };
             let b = w.as_bytes();
-            let p = prev.iter().zip(b).take_while(|(x, y)| x == y).count().min(255);
-            raw.push(p as u8);
-            raw.extend_from_slice(b.get(p..).unwrap_or_default());
             let mask = self.flags.get(i).and_then(|&id| self.sets.get(usize::from(id))).copied().unwrap_or(0);
-            if mask != 0 {
-                raw.push(b'/');
-                raw.extend_from_slice(self.flag_chars_for(mask).as_bytes());
+            let masks = self.homonyms.get(w).map(AsRef::as_ref).unwrap_or(std::slice::from_ref(&mask));
+            for &entry_mask in masks {
+                let p = prev.iter().zip(b).take_while(|(x, y)| x == y).count().min(255);
+                raw.push(p as u8);
+                raw.extend_from_slice(b.get(p..).unwrap_or_default());
+                if entry_mask != 0 {
+                    raw.push(b'/');
+                    raw.extend_from_slice(self.flag_chars_for(entry_mask).as_bytes());
+                }
+                raw.push(b'\n');
+                prev = b;
             }
-            raw.push(b'\n');
-            prev = b;
         }
         miniz_oxide::deflate::compress_to_vec(&raw, 10)
     }
@@ -1028,6 +1060,38 @@ pub(crate) mod tests {
         }
         for w in ["kotą", "pieseka", "pieskem", "niepiesek", "niekrową", "krowy", "warszawa", "", "nie", "y", "ka"] {
             assert!(!d.contains(w), "{w}");
+        }
+    }
+
+    #[test]
+    fn homonym_entries_do_not_combine_affix_permissions() {
+        // Each spelling of canto permits a different derivation. Only cuento carries both
+        // flags in a single entry, so only that stem permits the cross product.
+        let aff = "SET UTF-8\nPFX P Y 1\nPFX P 0 super .\nSFX G Y 1\nSFX G o a o\n";
+        let d = AffixDict::from_hunspell(aff, "5\ncanto/G\ncanto/P\ncanto/G\ncanto\ncuento/GP\n", &[]).unwrap();
+        let back = AffixDict::from_bytes(&d.to_bytes()).unwrap();
+        for dictionary in [&d, &back] {
+            assert_eq!(dictionary.len(), 2, "homonyms still share a stem lookup");
+            for word in ["canto", "canta", "supercanto", "cuento", "cuenta", "supercuento", "supercuenta"] {
+                assert!(dictionary.check(word), "{word}");
+            }
+            for word in ["supercanta", "Supercanta", "SUPERCANTA"] {
+                assert!(!dictionary.check(word), "permissions from separate homonyms must not combine: {word}");
+            }
+            let forms = dictionary.forms("canto");
+            assert_eq!(forms.len(), 3, "one shared expansion, not repeated allocations for each homonym");
+            assert!(forms.contains(&"canta".into()) && forms.contains(&"supercanto".into()));
+            assert!(!forms.contains(&"supercanta".into()), "the suggestion scanner must not generate the invalid cross product");
+            assert!(forms.iter().all(|word| dictionary.contains(word)));
+        }
+        // A continuation class explicitly grants the prefix to the derived form. That is
+        // a valid path, not an accidental combination of separate homonyms' base flags.
+        let continued_aff = aff.replace("SFX G o a o", "SFX G o a/P o");
+        let continued = AffixDict::from_hunspell(&continued_aff, "2\ncanto/G\ncanto/P\n", &[]).unwrap();
+        let back = AffixDict::from_bytes(&continued.to_bytes()).unwrap();
+        for dictionary in [&continued, &back] {
+            assert!(dictionary.contains("supercanta"));
+            assert!(dictionary.forms("canto").contains(&"supercanta".into()), "an explicit continuation still licenses the prefix");
         }
     }
 

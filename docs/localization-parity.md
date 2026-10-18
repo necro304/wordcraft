@@ -1,6 +1,6 @@
 # Localization parity with Microsoft Word
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-18 · **Change:** minor (independent Spanish dictionary validation exposes affix, options and Unicode-input gaps; earlier changes in Revision history) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-18 · **Change:** minor (homonym derivations and explicit Spanish review options corrected; original comparison repeated; earlier changes in Revision history) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
 
 Interface languages, script support and proofing per language. How translation works (catalog
 format, adding a language, clean-room rule): `crates/ui-egui/src/i18n/mod.rs`.
@@ -123,11 +123,13 @@ unchanged. Each user still needs to install a Spanish Hunspell pair or select it
 
 **Wider validation (2026-10-18):** [Spanish proofing validation](spanish-proofing-validation.md)
 compares the same files with Hunspell 1.7.5. A 130,938-input Mexico batch finds two erroneous
-acceptances from merged homonym flags. Of 557,222 independently expanded, reference-accepted
+acceptances from merged homonym flags in the baseline. The follow-up fixes these (2 → 0 on
+the identical corpus), preserves separate permissions in compact dictionary saves and respects
+explicit Spanish capital/digit review options; defaults remain unchanged. Of 557,222 independently expanded, reference-accepted
 forms, 3,552 are rejected here. The report separates wrapper policies and regional data from
-engine faults, and records options, decomposed-Unicode and abbreviation problems. Suggestion
-targets appear first in 37/48 Mexico probes and in the first six in 44/48. These findings remain
-unfixed in this validation arc; the initial smoke test is not full dictionary parity.
+engine faults; decomposed-Unicode and abbreviation problems remain. Suggestion targets still
+appear first in 37/48 Mexico probes and in the first six in 44/48. These remaining gaps mean
+the initial smoke test and the two repairs are not full dictionary parity.
 
 | Language | Spelling | Suggestions | Grammar | Hyphenation |
 |---|---|---|---|---|
@@ -221,6 +223,7 @@ WordCraft keeps 2,54 cm).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-18 | minor | Homonym cross products, form generation and compact round trips corrected; explicit Spanish capital/digit options respected; regressions and frozen external corpus rechecked, broader gaps unchanged |
 | 2026-10-18 | minor | Independent Spanish/Hunspell comparison and native expansion reveal unresolved affix, suggestion, review-option, Unicode and abbreviation gaps; linked detailed evidence, estimates unchanged |
 | 2026-10-18 | trivial | Included the RLA-ES Unicode-flag fix from #2164 locally; real es_MX loads (56,640 stems, 6,289 rules), CLI flags cancion/prueva and suggests canción/prueba; dictionary data stays external; estimates unchanged |
 | 2026-10-18 | trivial | Spanish dictionary-folder changes invalidate its cache; Options reports its source and the status bar hints when unavailable; synthetic lifecycle regression passes; real RLA-ES es_MX loading remains blocked by the Unicode flag issue addressed in #2164; estimates unchanged |

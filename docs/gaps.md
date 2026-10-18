@@ -1,6 +1,6 @@
 # Where WordCraft falls short of Word
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-18 · **Change:** minor (independent Spanish validation identifies remaining proofing gaps; earlier changes in Revision history) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-18 · **Change:** minor (Spanish homonym and explicit review-option gaps corrected; remaining conformance gaps retained; earlier changes in Revision history) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
 
 > **Printing update:** 2026-10-12 · direct desktop printing through craft-print; details below.
 
@@ -26,11 +26,13 @@ Spanish proofing (gap #8, PR #1522): dictionary-folder changes now reload Spanis
 the selected dictionary and the status bar reports an unavailable one. Synthetic lifecycle tests
 cover this integration. The Unicode-flag fix from #2164 is included locally; real RLA-ES `es_MX`
 now loads, and a CLI smoke test flags `cancion`/`prueva` and suggests `canción`/`prueba`. Whole-dictionary
-parity is not established: [independent validation](spanish-proofing-validation.md) finds two
-false acceptances from merged homonym flags, 3,552 rejected forms out of 557,222 accepted by the
-reference in an expansion batch, missing suggestion targets, ignored explicit proofing options,
-decomposed-Unicode tokenization problems and an abbreviation false alarm. Regional accuracy
-remains partial. No dictionary files are bundled and readiness estimates are unchanged.
+parity is not established: [independent validation](spanish-proofing-validation.md) initially
+found two false acceptances from merged homonym flags. These are fixed (2 → 0 on the identical
+130,938-input corpus), including form generation and compact saves; explicit Spanish capital/digit
+options are fixed too. Remaining gaps: 3,552 rejected forms out of 557,222 accepted by the reference
+in an expansion batch, missing suggestion targets, decomposed-Unicode tokenization and an
+abbreviation false alarm. Regional accuracy remains partial. No dictionary files are bundled and
+readiness estimates are unchanged.
 
 | # | Gap | B | Evidence | Impact | Hours | Doc |
 |---|---|---|---|---|---|---|
@@ -99,6 +101,7 @@ The Language dialog reads effective character formatting, including document def
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-18 | minor | Gap #8: homonym cross products and explicit Spanish capital/digit options fixed with regressions; original corpus false acceptances 2 → 0; expanded-form, suggestion, Unicode and abbreviation gaps remain |
 | 2026-10-18 | minor | Gap #8: independent Spanish validation records unresolved affix, suggestion, options, Unicode and grammar issues, rather than treating dictionary loading as parity; estimates unchanged |
 | 2026-10-18 | trivial | Gap #8: RLA-ES parser prerequisite #2164 included locally and real es_MX loading/CLI correction smoke-tested; no dictionary bundled and no readiness estimate change |
 | 2026-10-18 | trivial | Gap #8: Spanish dictionary reload, source reporting and unavailable hint covered on PR #1522; real-dictionary parser prerequisite #2164 remains; estimates unchanged |

@@ -89,18 +89,27 @@ pub fn is_correct(word: &str) -> bool {
     is_correct_with(&dictionary(), word)
 }
 
+/// Check with the caller's explicit File › Options › Proofing choices, not the module defaults.
+pub(crate) fn is_correct_with_options(word: &str, opts: &crate::Options) -> bool {
+    check_word(&dictionary(), word, opts)
+}
+
 /// [`is_correct`] against a given dictionary (an empty one accepts everything).
 pub fn is_correct_with(d: &AffixDict, word: &str) -> bool {
+    check_word(d, word, &crate::Options::default())
+}
+
+fn check_word(d: &AffixDict, word: &str, opts: &crate::Options) -> bool {
     if d.is_empty() {
         return true; // no Spanish dictionary installed: no spelling marks
     }
     let w = word.trim_matches(|c: char| !c.is_alphanumeric() && c != '\'' && c != '’');
     let w = w.trim_matches(['\'', '’']);
     let n = w.chars().count();
-    if n <= 1 || w.chars().any(|c| c.is_ascii_digit()) || !w.chars().any(char::is_alphabetic) {
+    if n <= 1 || (opts.ignore_numbers && w.chars().any(|c| c.is_ascii_digit())) || !w.chars().any(char::is_alphabetic) {
         return true;
     }
-    if w.chars().all(|c| !c.is_lowercase()) && n <= 6 {
+    if opts.ignore_uppercase && w.chars().all(|c| !c.is_lowercase()) && n <= 6 {
         return true;
     }
     if !w.chars().any(is_latin_letter) {
@@ -148,6 +157,25 @@ kot
             .is_err(),
             "unsupported files are refused"
         );
+    }
+
+    #[test]
+    fn explicit_spanish_ignore_options_are_respected() {
+        test_dict::install();
+        let strict = crate::Options { ignore_uppercase: false, ignore_numbers: false, ignore_internet: true };
+        for word in ["ÁRBOL", "MÉXICO", "CANCIÓN", "niño", "42"] {
+            assert!(crate::is_correct_in_with(word, crate::ProofLang::Es, &strict), "{word}");
+        }
+        for word in ["ARBOL", "MEXICO", "CANCION", "ZZQQ", "español2"] {
+            assert!(!crate::is_correct_in_with(word, crate::ProofLang::Es, &strict), "explicit checking must reach the dictionary: {word}");
+            assert!(crate::is_correct_in_with(word, crate::ProofLang::Es, &crate::Options::default()), "the defaults still skip {word}");
+        }
+        let capitals = crate::Options { ignore_uppercase: true, ..strict };
+        assert!(crate::is_correct_in_with("ARBOL", crate::ProofLang::Es, &capitals));
+        assert!(!crate::is_correct_in_with("español2", crate::ProofLang::Es, &capitals));
+        let numbers = crate::Options { ignore_numbers: true, ..strict };
+        assert!(!crate::is_correct_in_with("ARBOL", crate::ProofLang::Es, &numbers));
+        assert!(crate::is_correct_in_with("español2", crate::ProofLang::Es, &numbers));
     }
 
     #[test]
